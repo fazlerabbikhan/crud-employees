@@ -6,7 +6,8 @@ const Employee = new mongoose.model('Employee', employeeSchema);
 
 // post an employee
 router.post('/', async (req, res) => {
-    await Employee.save(req.body);
+    const newEmployee = new Employee(req.body);
+    await newEmployee.save(req.body);
     try {
         res.status(200).json({
             message: "Employee was inserted successfully!"
@@ -33,12 +34,16 @@ router.post('/all', async (req, res) => {
 });
 
 // get all the employees
-router.get('/', async (req, res) => {
-    await Employee.find({});
+router.get('/all', async (req, res) => {
+    const allEmployees = await Employee.find({});
+    const modified = allEmployees.map((
+        {
+            _id, firstName, lastName, email, phoneNumber, isBlocked }) => (
+        {
+            _id, fullName: firstName + ' ' + lastName, email, phoneNumber, isBlocked
+        }));
     try {
-        res.status(200).json({
-            message: "Employees were found successfully!"
-        })
+        res.send(modified)
     } catch (err) {
         res.status(500).json({
             error: "There was a server side error!"
@@ -48,10 +53,14 @@ router.get('/', async (req, res) => {
 
 // get an employee by id
 router.get('/:id', async (req, res) => {
-    await Employee.find({ _id: req.params.id });
+    const employee = await Employee.findOne({ _id: req.params.id });
     try {
         res.status(200).json({
-            message: "Employee was found successfully!"
+            _id: employee._id,
+            fullName: employee.fullName,
+            email: employee.email,
+            phoneNumber: employee.phoneNumber,
+            isBlocked: employee.isBlocked
         })
     } catch (err) {
         res.status(500).json({
@@ -64,7 +73,15 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
     await Employee.findByIdAndUpdate(
         { _id: req.params.id },
-        { status: 'unblocked' },
+        {
+            $set: {
+                firstName: req.body.firstName,
+                lastName: req.body.lastName,
+                email: req.body.email,
+                phoneNumber: req.body.phoneNumber,
+                isBlocked: req.body.isBlocked
+            }
+        },
         { new: true, useFindAndModify: false });
     try {
         res.status(200).json({
@@ -77,9 +94,21 @@ router.put('/:id', async (req, res) => {
     };
 });
 
+// check if blocked
+router.get('/isBlocked/:id', async (req, res) => {
+    const employee = await Employee.findOne({ _id: req.params.id });
+    try {
+        res.send(employee.isBlocked)
+    } catch (err) {
+        res.status(500).json({
+            error: "There was a server side error!"
+        })
+    };
+});
+
 // delete an employee
 router.delete('/:id', async (req, res) => {
-    await Employee.delete({ _id: req.params.id });
+    await Employee.deleteOne({ _id: req.params.id });
     try {
         res.status(200).json({
             message: "Employee was deleted successfully!"

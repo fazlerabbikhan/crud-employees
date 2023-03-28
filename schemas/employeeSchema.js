@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const employeeSchema = mongoose.Schema({
+const employeeSchema = new mongoose.Schema({
     firstName: {
         type: String,
         required: true
@@ -18,10 +18,14 @@ const employeeSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    staus: {
-        type: String,
-        enum: ['blocked', 'unblocked']
+    isBlocked: {
+        type: Boolean,
+        default: false
     }
+});
+
+employeeSchema.virtual('fullName').get(function () {
+    return this.firstName + ' ' + this.lastName;
 });
 
 module.exports = employeeSchema;
